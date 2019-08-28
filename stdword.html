@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <script src='../jquery.js'></script>
+    <script src='../layer.js'></script><script src=//cdn.jsdelivr.net/npm/eruda></script><script>eruda.init();
+  
+  console.log('控制台打印信息');</script>
+    <title>Document</title>
+</head>
+<body>
+    <style>
+        #box{
+            display: flex;
+            justify-content: center ;
+        }
+    #container {
+        margin: 0 auto;
+        margin-top:20px;
+    }
+    .pic{
+        text-align:center
+    }
+    img{
+     
+        width:25vh;
+        
+    }
+    img p{
+       
+        width:10vh;
+        height:10vh;
+        background: rgb(173, 101, 101)
+    }
+    .tab button{
+        margin:3vh;
+    }
+    .state button{
+        margin:5vh;
+    }
+
+    .tab{
+        text-align:center
+    }
+    .state{
+        text-align:center
+    }
+    ul li{      
+        float:left; /* 往左浮动 */
+        margin-left:5vh;
+        margin-bottom:2vh;
+    }
+    li span{
+        font-size:12px;
+    }
+	#ok{
+	   width:10vh;
+	   height:10vh;
+	}
+
+    </style>
+    <div  id='box'><div id='container'>
+        <div>选择学习内容：<br><ul><li  onclick='init()'>全部<span id='3'></span></li><li state='2' onclick='changeContent(2)'>熟悉<span id='2'></span></li><li state='1' onclick='changeContent(1)'>不熟悉<span id='1'></span></li><li state=0 onclick='changeContent(0)'>不会<span id='0'></span></li></ul></div><br>
+        <div class='pic'><img ></img></div>
+		
+        <div class='tab'><button id='ok'  onclick='ican()'>ok</button><select>
+            <option value="0">手动</option>
+            <option value="0.6">自动0.6s</option>
+            <option value="0.8">自动0.8s</option>
+            <option value="1">自动1s</option>
+            <option value="2">自动2s</option>
+            <option value="2.5">自动2.5s</option>
+            <option value="3">自动3s</option>
+          </select><button id='next' onclick='next()'>下一个</button></div>
+        <div class='state'><button onclick='changeState(2)'>熟悉</button><button onclick='changeState(1)'>不熟</button><button onclick='changeState(0)'>不会</button></div>
+    </div></div>
+
+    <script>
+    var FullWords=[],FullWords_=[1,2],familiar=[],unfamilliar=[],unknow=[],studyWords=[],studyWords_=[],currentWord,
+    set,//定时器id
+    ok=false,//是否掌握
+    saveData, //上一个保存的数据
+    currentState ;//当前内容类别
+    var serverIp='http://192.168.1.100:3000/'
+	var serverIp='http://techcrekn.top/'
+    //data:[{word:'',state:1}]//0:bad,1:good,2:excellet
+    $.get(serverIp+'c/getSaveWords').then((data)=>{
+                if(data=='err'){
+                    for(var i=0;i<144;i++){
+                         FullWords.push({word:i,state:3})
+                         FullWords_.push({word:i,state:3})
+                         }                
+                }else{
+                    FullWords_=JSON.parse(data)
+                    for(var i in FullWords_){
+                        if(FullWords_[i].state==3){
+                            FullWords.push(FullWords_[i])
+                        }
+                    }
+                    FullWords=JSON.parse(JSON.stringify(FullWords))
+                }
+    })
+    
+
+    //初始化图片
+        function init(){
+            studyWords=[];
+            studyWords.push.apply(studyWords,FullWords)
+            currentWord=radom(studyWords);
+			 currentState=3
+            $('#3').html(FullWords.length);
+           $('img')[0].src='./one/'+currentWord.word+'.jpg'
+        }
+        
+    //select事件
+    $('select').change(function(){
+            let rate=$("select").val();           
+            if(rate==0){
+               set&&clearInterval(set)
+            }else {
+               set&&clearInterval(set)
+               set=setInterval(function(){
+			    
+			//不会的情况
+		   for(var i in FullWords_){
+			 if(FullWords_[i].word==currentWord.word){
+				 if(currentState==3&&!ok){                                                       						
+					FullWords_[i].state=0
+					save()
+				 }else if(currentState==3){
+				    FullWords_[i].state=2
+					save()				 
+				 }
+				   
+			 }
+		   }
+				
+            if(!studyWords.length){
+                layer.msg('测试完毕');
+                set&&clearInterval(set)
+                  return
+            }
+                currentWord=radom(studyWords);
+                $('img')[0].src='./one/'+currentWord.word+'.jpg';
+				ok=false;
+               },parseFloat(rate)*1000)
+            }
+
+
+    })
+
+	//已会
+	function ican(){
+	        ok=true
+			console.log('ican',ok)
+	}
+
+    function autoPlay(){ console.log('autoplay')
+        setInterval(function(){
+            
+        },2000)
+    }
+    
+    function next(){ 
+        set&&clearInterval(set)
+        if(!studyWords.length&&studyWords_.length){
+           studyWords.push.apply(studyWords,studyWords_)           
+        }else if(!studyWords.length){
+            layer.msg('学习完毕,请重新选择学习内容')
+            return
+        }
+        currentWord=radom(studyWords);
+        $('img')[0].src='./one/'+currentWord.word+'.jpg'
+    }
+
+    function changeState(state){
+          for(var i in FullWords_){
+              if(FullWords_[i].word==currentWord.word){
+                
+                  FullWords_[i].state=state
+                 
+              }
+          }
+          changeContent(currentState)
+          save()
+    }
+
+    function changeContent(state){console.log('state:',state)
+        studyWords=[];
+        studyWords_=[];
+        currentState=state
+        for(var i in FullWords_){
+            if(FullWords_[i].state==state){
+                studyWords.push(FullWords_[i])
+            }
+        }
+        studyWords_.push.apply(studyWords_,studyWords)
+        $('#next').click()
+        $('#'+state).html(studyWords_.length);
+        
+
+    }
+    
+    //随机从数组取值
+    function radom(arr){
+        let rand = Math.floor( Math.random() * arr.length );
+        return arr.splice(rand, 1)[0];
+    }
+
+    function save(){
+        if(JSON.stringify(FullWords_)!=saveData){
+            FullWords=[];
+            for(var i in FullWords_){
+                        if(FullWords_[i].state==3){
+                            FullWords.push(FullWords_[i])
+                        }
+                    }
+                    FullWords=JSON.parse(JSON.stringify(FullWords))
+           if(currentState!=3){
+		   $('#'+currentState).html(studyWords_.length);
+		   }
+             
+            
+            
+            $.post(serverIp+'c/saveCnstudyWords',{data:JSON.stringify(FullWords_)},function(){
+                    saveData=JSON.stringify(FullWords_)
+                
+            })
+        }
+        
+    }
+    
+    </script>
+</body>
+</html>
